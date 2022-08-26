@@ -2,12 +2,11 @@
 /* eslint-disable no-unused-expressions */
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import * as fsAsync from '../../src/common/fsAsync';
 import { ConfigManager } from '../../src/configuration/configManager';
-import { ManifestReader } from '../../src/iconsManifest';
+import { FSNode } from '../../src/fs/fsNode';
 import {
   IConfigManager,
-  IProjectAutoDetectionManager,
+  IFSAsync,
   IVSCodeManager,
   LangResourceKeys,
   Projects,
@@ -25,9 +24,11 @@ describe('ProjectAutoDetectionManager: Angular project tests', function () {
     let findFilesStub: sinon.SinonStub;
     let getPresetStub: sinon.SinonStub;
     let parseJSONStub: sinon.SinonStub;
-    let padManager: IProjectAutoDetectionManager;
+    let padManager: ProjectAutoDetectionManager;
+    let fs: IFSAsync;
 
     beforeEach(() => {
+      fs = new FSNode();
       sandbox = sinon.createSandbox();
 
       configManagerStub = sandbox.createStubInstance<IConfigManager>(
@@ -49,6 +50,7 @@ describe('ProjectAutoDetectionManager: Angular project tests', function () {
       padManager = new ProjectAutoDetectionManager(
         vscodeManagerStub,
         configManagerStub,
+        fs,
       );
 
       parseJSONStub = sandbox.stub(Utils, 'parseJSONSafe');
@@ -67,8 +69,11 @@ describe('ProjectAutoDetectionManager: Angular project tests', function () {
       beforeEach(function () {
         vsicons.projectDetection.disableDetect = false;
         findFilesStub.resolves([{ fsPath: packageJsonPath }]);
-        readFileAsyncStub = sandbox.stub(fsAsync, 'readFileAsync');
-        iconsDisabledStub = sandbox.stub(ManifestReader, 'iconsDisabled');
+        readFileAsyncStub = sandbox.stub(fs, 'readFileAsync');
+        iconsDisabledStub = sandbox.stub(
+          padManager.manifestReader,
+          'iconsDisabled',
+        );
       });
 
       context(`detects a 'package.json' file`, function () {

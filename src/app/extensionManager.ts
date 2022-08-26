@@ -25,7 +25,9 @@ export class ExtensionManager implements models.IExtensionManager {
     private notificationManager: models.INotificationManager,
     private iconsGenerator: models.IIconsGenerator,
     private projectAutoDetectionManager: models.IProjectAutoDetectionManager,
+    // TODO: (ROB) remove integrityManager until we have browser support.
     private integrityManager: models.IIntegrityManager,
+    private manifestReader: ManifestReader,
   ) {
     this.manifest = packageJson as IPackageManifest;
     // register event listener for configuration changes
@@ -139,12 +141,14 @@ export class ExtensionManager implements models.IExtensionManager {
           case models.LangResourceKeys.activate:
             return this.activationCommand();
           case models.LangResourceKeys.aboutOfficialApi: {
-            void Utils.open(constants.urlOfficialApi);
+            // TODO: (ROB) uncomment line below once we have browser support.
+            // void Utils.open(constants.urlOfficialApi);
             // Display the message again so the user can choose to activate or not
             return displayMessage();
           }
           case models.LangResourceKeys.seeReadme: {
-            void Utils.open(constants.urlReadme);
+            // TODO: (ROB) uncomment line below once we have browser support.
+            // void Utils.open(constants.urlReadme);
             // Display the message again so the user can choose to activate or not
             return displayMessage();
           }
@@ -167,8 +171,9 @@ export class ExtensionManager implements models.IExtensionManager {
         models.LangResourceKeys.dontShowThis,
       );
       switch (btn) {
-        case models.LangResourceKeys.seeReleaseNotes:
-          return void Utils.open(constants.urlReleaseNote);
+        // TODO: (ROB) uncomment lines below once we have browser support.
+        // case models.LangResourceKeys.seeReleaseNotes:
+        //   return void Utils.open(constants.urlReleaseNote);
         case models.LangResourceKeys.dontShowThis:
           return this.configManager.updateDontShowNewVersionMessage(true);
         default:
@@ -512,7 +517,7 @@ export class ExtensionManager implements models.IExtensionManager {
   ): Promise<void> {
     const presetName = models.PresetNames[preset];
     const commandName = models.CommandNames[command];
-    const toggledValue = await ManifestReader.getToggledValue(
+    const toggledValue = await this.manifestReader.getToggledValue(
       preset,
       this.configManager.vsicons.presets,
     );

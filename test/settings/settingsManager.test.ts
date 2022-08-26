@@ -4,10 +4,11 @@ import { expect } from 'chai';
 import * as semver from 'semver';
 import * as sinon from 'sinon';
 import { ErrorHandler } from '../../src/common/errorHandler';
-import * as fsAsync from '../../src/common/fsAsync';
 import { constants } from '../../src/constants';
+import { FSNode } from '../../src/fs/fsNode';
 import {
   ExtensionStatus,
+  IFSAsync,
   ISettingsManager,
   IState,
   IVSCodeManager,
@@ -26,8 +27,10 @@ describe('SettingsManager: tests', function () {
     let globalStateUpdateStub: sinon.SinonStub;
     let logErrorStub: sinon.SinonStub;
     let parseJSONStub: sinon.SinonStub;
+    let fs: IFSAsync;
 
     beforeEach(function () {
+      fs = new FSNode();
       sandbox = sinon.createSandbox();
 
       vscodeManagerStub = sandbox.createStubInstance<IVSCodeManager>(
@@ -43,7 +46,7 @@ describe('SettingsManager: tests', function () {
         },
       }));
 
-      settingsManager = new SettingsManager(vscodeManagerStub);
+      settingsManager = new SettingsManager(vscodeManagerStub, fs);
 
       logErrorStub = sandbox.stub(ErrorHandler, 'logError');
       parseJSONStub = sandbox.stub(Utils, 'parseJSONSafe');
@@ -62,7 +65,7 @@ describe('SettingsManager: tests', function () {
     });
 
     it(`an Error gets thrown, when 'vscodeManager' is NOT instantiated`, function () {
-      expect(() => new SettingsManager(null))
+      expect(() => new SettingsManager(null, fs))
         .to.throw(ReferenceError)
         .that.matches(/'vscodeManager' not set to an instance/);
     });
@@ -74,9 +77,9 @@ describe('SettingsManager: tests', function () {
       let semverSpy: sinon.SinonSpy;
 
       beforeEach(function () {
-        existsAsyncStub = sandbox.stub(fsAsync, 'existsAsync');
-        readFileAsyncStub = sandbox.stub(fsAsync, 'readFileAsync');
-        unlinkFileAsyncStub = sandbox.stub(fsAsync, 'unlinkAsync');
+        existsAsyncStub = sandbox.stub(fs, 'existsAsync');
+        readFileAsyncStub = sandbox.stub(fs, 'readFileAsync');
+        unlinkFileAsyncStub = sandbox.stub(fs, 'unlinkAsync');
         vscodeManagerStub.getAppUserDirPath.returns('');
       });
 

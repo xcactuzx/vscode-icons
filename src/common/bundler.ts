@@ -1,7 +1,9 @@
 import { join } from 'path';
-import { readdirAsync, readFileAsync, writeFileAsync } from '../common/fsAsync';
 import { constants } from '../constants';
+import { FSNode } from '../fs/fsNode';
 import { Utils } from '../utils';
+
+const fs = new FSNode();
 
 export class Bundler {
   public static async bundleLangResources(
@@ -22,7 +24,7 @@ export class Bundler {
       if (!locale) {
         throw new Error(`No locale found for: ${filename}`);
       }
-      const content = await readFileAsync(join(sourceDirPath, filename));
+      const content = await fs.readFileAsync(join(sourceDirPath, filename));
       const translations: Record<string, string> = Utils.parseJSONSafe<
         Record<string, string>
       >(content.toString());
@@ -32,7 +34,7 @@ export class Bundler {
     };
     const bundleJson = {};
     const promises: Array<Promise<void>> = [];
-    const resourseFiles = await readdirAsync(sourceDirPath);
+    const resourseFiles = await fs.readdirAsync(sourceDirPath);
     resourseFiles.forEach((filename: string) =>
       promises.push(iterator(filename, bundleJson)),
     );
@@ -42,7 +44,7 @@ export class Bundler {
       throw new Error('Bundling language resources failed');
     }
 
-    await writeFileAsync(
+    await fs.writeFileAsync(
       targetFilePath,
       JSON.stringify(
         bundleJson,
@@ -57,11 +59,9 @@ export class Bundler {
     targetDirPath: string,
   ): Promise<void> {
     const iterator = async (filename: string): Promise<void> => {
-      const content = await readFileAsync(join(sourceDirPath, filename));
-      const bundleJson = Utils.parseJSONSafe<Record<string, unknown>>(
-        content.toString(),
-      );
-      await writeFileAsync(
+      const content = await fs.readFileAsync(join(sourceDirPath, filename));
+      const bundleJson = Utils.parseJSONSafe<Record<string, unknown>>(content);
+      await fs.writeFileAsync(
         join(targetDirPath, filename),
         JSON.stringify(
           bundleJson,
@@ -71,7 +71,7 @@ export class Bundler {
       );
     };
     const promises = [];
-    const resourseFiles = await readdirAsync(sourceDirPath);
+    const resourseFiles = await fs.readdirAsync(sourceDirPath);
     resourseFiles.forEach((filename: string) =>
       promises.push(iterator(filename)),
     );

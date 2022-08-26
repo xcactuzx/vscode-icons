@@ -9,12 +9,14 @@ export class CustomsMerger {
     customFolders: models.IFolderCollection,
     extFolders: models.IFolderCollection,
     presets: models.IPresets,
+    fs: models.IFSAsync,
     projectDetectionResults?: models.IProjectDetectionResult[],
     affectedPresets?: models.IPresets,
   ): Promise<models.IMergedCollection> {
     const projectPresets = await this.getProjectPresets(
       [models.PresetNames.angular, models.PresetNames.nestjs],
       presets,
+      fs,
       projectDetectionResults,
       affectedPresets,
     );
@@ -66,6 +68,7 @@ export class CustomsMerger {
   private static async getProjectPresets(
     presetNames: models.PresetNames[],
     presets: models.IPresets,
+    fs: models.IFSAsync,
     projectDetectionResults?: models.IProjectDetectionResult[],
     affectedPresets?: models.IPresets,
   ): Promise<Array<Record<string, boolean>>> {
@@ -83,6 +86,7 @@ export class CustomsMerger {
         name,
         project,
         presets,
+        fs,
         projectDetectionResult,
         affectedPresets,
       );
@@ -95,6 +99,7 @@ export class CustomsMerger {
     name: string,
     project: string,
     presets: models.IPresets,
+    fs: models.IFSAsync,
     projectDetectionResult?: models.IProjectDetectionResult,
     affectedPresets?: models.IPresets,
   ): Promise<boolean> {
@@ -102,13 +107,14 @@ export class CustomsMerger {
       !!projectDetectionResult &&
       typeof projectDetectionResult === 'object' &&
       'value' in projectDetectionResult;
+    const manifestReader: ManifestReader = new ManifestReader(fs);
     return hasProjectDetectionResult &&
       projectDetectionResult.project === project
       ? projectDetectionResult.value
       : (presets[name] as boolean) ||
           (!!affectedPresets &&
             !affectedPresets[name] &&
-            !(await ManifestReader.iconsDisabled(project)));
+            !(await manifestReader.iconsDisabled(project)));
   }
 
   private static toggleProjectPreset(

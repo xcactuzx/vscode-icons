@@ -3,12 +3,11 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { ErrorHandler } from '../../src/common/errorHandler';
-import * as fsAsync from '../../src/common/fsAsync';
 import { ConfigManager } from '../../src/configuration/configManager';
-import { ManifestReader } from '../../src/iconsManifest';
+import { FSNode } from '../../src/fs/fsNode';
 import {
   IConfigManager,
-  IProjectAutoDetectionManager,
+  IFSAsync,
   IVSCodeManager,
   LangResourceKeys,
   Projects,
@@ -25,9 +24,11 @@ describe('ProjectAutoDetectionManager: tests', function () {
     let vscodeManagerStub: sinon.SinonStubbedInstance<IVSCodeManager>;
     let findFilesStub: sinon.SinonStub;
     let logErrorStub: sinon.SinonStub;
-    let padManager: IProjectAutoDetectionManager;
+    let padManager: ProjectAutoDetectionManager;
+    let fs: IFSAsync;
 
     beforeEach(() => {
+      new FSNode();
       sandbox = sinon.createSandbox();
 
       configManagerStub = sandbox.createStubInstance<IConfigManager>(
@@ -48,6 +49,7 @@ describe('ProjectAutoDetectionManager: tests', function () {
       padManager = new ProjectAutoDetectionManager(
         vscodeManagerStub,
         configManagerStub,
+        fs,
       );
 
       logErrorStub = sandbox.stub(ErrorHandler, 'logError');
@@ -60,13 +62,13 @@ describe('ProjectAutoDetectionManager: tests', function () {
 
     it(`an Error gets thrown, when 'vscodeManager' is NOT instantiated`, function () {
       expect(
-        () => new ProjectAutoDetectionManager(null, configManagerStub),
+        () => new ProjectAutoDetectionManager(null, configManagerStub, fs),
       ).to.throw(ReferenceError, /'vscodeManager' not set to an instance/);
     });
 
     it(`an Error gets thrown, when 'configManager' is NOT instantiated`, function () {
       expect(
-        () => new ProjectAutoDetectionManager(vscodeManagerStub, null),
+        () => new ProjectAutoDetectionManager(vscodeManagerStub, null, fs),
       ).to.throw(ReferenceError, /'configManager' not set to an instance/);
     });
 
@@ -82,7 +84,7 @@ describe('ProjectAutoDetectionManager: tests', function () {
     it('detects non conflicting projects', async function () {
       vsicons.projectDetection.disableDetect = false;
       findFilesStub.resolves([{ fsPath: '' }]);
-      sandbox.stub(fsAsync, 'readFileAsync').resolves(undefined);
+      sandbox.stub(fs, 'readFileAsync').resolves(undefined);
       sandbox.stub(Utils, 'parseJSONSafe').returns({
         dependencies: {
           angularjs: '1.0.0',
@@ -93,7 +95,7 @@ describe('ProjectAutoDetectionManager: tests', function () {
         key: '',
         workspaceValue: undefined,
       });
-      sandbox.stub(ManifestReader, 'iconsDisabled').resolves(true);
+      sandbox.stub(padManager.manifestReader, 'iconsDisabled').resolves(true);
       // @ts-ignore
       sandbox.stub(padManager, 'getProjectInfo').resolves({});
 
@@ -144,7 +146,7 @@ describe('ProjectAutoDetectionManager: tests', function () {
       it(`returns the conflict project detected 'LangResourceKey'`, async function () {
         vsicons.projectDetection.disableDetect = false;
         findFilesStub.resolves([{ fsPath: '' }]);
-        sandbox.stub(fsAsync, 'readFileAsync').resolves(undefined);
+        sandbox.stub(fs, 'readFileAsync').resolves(undefined);
         sandbox.stub(Utils, 'parseJSONSafe').returns({
           dependencies: {
             '@angular/core': '1.0.0',
@@ -155,7 +157,7 @@ describe('ProjectAutoDetectionManager: tests', function () {
           key: '',
           workspaceValue: undefined,
         });
-        sandbox.stub(ManifestReader, 'iconsDisabled').resolves(true);
+        sandbox.stub(padManager.manifestReader, 'iconsDisabled').resolves(true);
 
         const res = await padManager.detectProjects([
           Projects.angular,

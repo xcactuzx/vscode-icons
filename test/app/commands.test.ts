@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { ExtensionManager } from '../../src/app/extensionManager';
 import { ConfigManager } from '../../src/configuration/configManager';
-import { IconsGenerator } from '../../src/iconsManifest';
+import { IconsGenerator, ManifestReader } from '../../src/iconsManifest';
 import { IntegrityManager } from '../../src/integrity/integrityManager';
 import * as models from '../../src/models';
 import { NotificationManager } from '../../src/notification/notificationManager';
@@ -12,6 +12,7 @@ import { ProjectAutoDetectionManager } from '../../src/pad/projectAutoDetectionM
 import { SettingsManager } from '../../src/settings/settingsManager';
 import { VSCodeManager } from '../../src/vscode/vscodeManager';
 import { IVSCodeCommand } from '../../src/models/vscode/vscodeCommand';
+import { FSNode } from '../../src/fs/fsNode';
 
 describe('ExtensionManager: commands tests', function () {
   context('ensures that', function () {
@@ -28,8 +29,12 @@ describe('ExtensionManager: commands tests', function () {
     let showCustomizationMessageStub: sinon.SinonStub;
     let togglePresetStub: sinon.SinonStub;
     let extensionManager: models.IExtensionManager;
+    let fs: models.IFSAsync;
+    let manifestReader: ManifestReader;
 
     beforeEach(function () {
+      fs = new FSNode();
+      manifestReader = new ManifestReader(fs);
       sandbox = sinon.createSandbox();
 
       vscodeManagerStub = sandbox.createStubInstance<models.IVSCodeManager>(
@@ -79,6 +84,7 @@ describe('ExtensionManager: commands tests', function () {
         iconsGeneratorStub,
         padMngStub,
         integrityManagerStub,
+        manifestReader,
       );
 
       showCustomizationMessageStub = sandbox.stub(

@@ -2,6 +2,7 @@ export * from './app/extensionManager';
 export * from './configuration/configManager';
 export * from './contributions';
 export * from './extensions';
+export * from './fs';
 export * from './i18n';
 export * from './iconsManifest';
 export * from './iconSchema';

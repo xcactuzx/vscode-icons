@@ -1,6 +1,5 @@
 import * as packageJson from '../../../package.json';
 import { ErrorHandler } from '../common/errorHandler';
-import { existsAsync, writeFileAsync } from '../common/fsAsync';
 import { ConfigManager } from '../configuration/configManager';
 import { constants } from '../constants';
 import * as models from '../models';
@@ -14,8 +13,11 @@ import { IPackageManifest } from '../models/packageManifest';
 export class IconsGenerator implements models.IIconsGenerator {
   private readonly manifest: IPackageManifest;
   private affectedPresets: models.IPresets;
+  private manifestBuilder: ManifestBuilder;
+  private utils: Utils;
 
   constructor(
+    private fs: models.IFSAsync,
     private vscodeManager?: models.IVSCodeManager,
     private configManager?: models.IConfigManager,
   ) {
@@ -29,6 +31,8 @@ export class IconsGenerator implements models.IIconsGenerator {
         this.vscodeManager.context.subscriptions,
       );
     }
+    this.manifestBuilder = new ManifestBuilder(this.fs);
+    this.utils = new Utils(this.fs);
   }
 
   public async generateIconsManifest(
@@ -38,7 +42,7 @@ export class IconsGenerator implements models.IIconsGenerator {
   ): Promise<models.IIconSchema> {
     // default icons manifest
     if (!files && !folders) {
-      return ManifestBuilder.buildManifest(extFiles, extFolders);
+      return this.manifestBuilder.buildManifest(extFiles, extFolders);
     }
 
     // customs merged icons manifest
@@ -52,13 +56,14 @@ export class IconsGenerator implements models.IIconsGenerator {
       folders,
       extFolders,
       vsiconsConfig.presets,
+      this.fs,
       projectDetectionResults,
       this.affectedPresets,
     );
     const customIconsDirPath = await this.configManager.getCustomIconsDirPath(
       vsiconsConfig.customIconFolderPath,
     );
-    const iconsManifest = await ManifestBuilder.buildManifest(
+    const iconsManifest = await this.manifestBuilder.buildManifest(
       mergedCollection.files,
       mergedCollection.folders,
       customIconsDirPath,
@@ -92,12 +97,12 @@ export class IconsGenerator implements models.IIconsGenerator {
     outDir: string,
   ): Promise<void> {
     try {
-      const dirExists = await existsAsync(outDir);
+      const dirExists = await this.fs.existsAsync(outDir);
       if (!dirExists) {
-        await Utils.createDirectoryRecursively(outDir);
+        await this.utils.createDirectoryRecursively(outDir);
       }
 
-      await writeFileAsync(
+      await this.fs.writeFileAsync(
         Utils.pathUnixJoin(outDir, iconsFilename),
         JSON.stringify(
           iconsManifest,
@@ -115,7 +120,7 @@ export class IconsGenerator implements models.IIconsGenerator {
   }
 
   private async updatePackageJson(): Promise<void> {
-    const sourceDirRelativePath = await Utils.getRelativePath(
+    const sourceDirRelativePath = await this.utils.getRelativePath(
       ConfigManager.rootDir,
       ConfigManager.sourceDir,
     );
@@ -190,7 +195,7 @@ export class IconsGenerator implements models.IIconsGenerator {
       return rawText;
     };
     try {
-      await Utils.updateFile(
+      await this.utils.updateFile(
         Utils.pathUnixJoin(ConfigManager.rootDir, 'package.json'),
         replacer,
       );

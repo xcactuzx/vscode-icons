@@ -1,5 +1,4 @@
 import { ErrorHandler } from '../common/errorHandler';
-import { readFileAsync } from '../common/fsAsync';
 import { constants } from '../constants';
 import { ManifestReader } from '../iconsManifest';
 import * as models from '../models';
@@ -8,9 +7,12 @@ import { Utils } from '../utils';
 
 export class ProjectAutoDetectionManager
   implements models.IProjectAutoDetectionManager {
+  public readonly manifestReader: ManifestReader;
+
   constructor(
     private vscodeManager: models.IVSCodeManager,
     private configManager: models.IConfigManager,
+    private fs: models.IFSAsync,
   ) {
     if (!vscodeManager) {
       throw new ReferenceError(`'vscodeManager' not set to an instance`);
@@ -18,6 +20,7 @@ export class ProjectAutoDetectionManager
     if (!configManager) {
       throw new ReferenceError(`'configManager' not set to an instance`);
     }
+    this.manifestReader = new ManifestReader(this.fs);
   }
 
   public async detectProjects(
@@ -78,7 +81,8 @@ export class ProjectAutoDetectionManager
     const getPreset = (proj: models.Projects): boolean =>
       this.configManager.getPreset<boolean>(getPresetName(proj)).workspaceValue;
 
-    const iconsDisabled: boolean = await ManifestReader.iconsDisabled(project);
+    const manifestReader = new ManifestReader(this.fs);
+    const iconsDisabled: boolean = await manifestReader.iconsDisabled(project);
 
     // NOTE: User setting (preset) bypasses detection in the following cases:
     // 1. Preset is set to 'false' and icons are not present in the manifest file
@@ -209,7 +213,7 @@ export class ProjectAutoDetectionManager
   ): Promise<models.IProjectInfo> {
     let projectInfo: models.IProjectInfo = null;
     for (const result of results) {
-      const content: string = await readFileAsync(result.fsPath, 'utf8');
+      const content: string = await this.fs.readFileAsync(result.fsPath);
       const projectJson: IPackageManifest = Utils.parseJSONSafe<
         IPackageManifest
       >(content);

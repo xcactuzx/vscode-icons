@@ -1,9 +1,9 @@
 import { eq, lt } from 'semver';
 import { ErrorHandler } from '../common/errorHandler';
-import { existsAsync, readFileAsync, unlinkAsync } from '../common/fsAsync';
 import { constants } from '../constants';
 import {
   ExtensionStatus,
+  IFSAsync,
   ISettingsManager,
   IState,
   IVSCodeManager,
@@ -17,7 +17,7 @@ export class SettingsManager implements ISettingsManager {
     welcomeShown: false,
   };
 
-  constructor(private vscodeManager: IVSCodeManager) {
+  constructor(private vscodeManager: IVSCodeManager, private fs: IFSAsync) {
     if (!vscodeManager) {
       throw new ReferenceError(`'vscodeManager' not set to an instance`);
     }
@@ -85,14 +85,15 @@ export class SettingsManager implements ISettingsManager {
       constants.extension.settingsFilename,
     );
 
-    const pathExists = await existsAsync(extensionSettingsLegacyFilePath);
+    const pathExists = await this.fs.existsAsync(
+      extensionSettingsLegacyFilePath,
+    );
     if (!pathExists) {
       return SettingsManager.defaultState;
     }
     try {
-      const state = await readFileAsync(
+      const state = await this.fs.readFileAsync(
         extensionSettingsLegacyFilePath,
-        'utf8',
       );
       return Utils.parseJSONSafe<IState>(state) || SettingsManager.defaultState;
     } catch (error) {
@@ -108,7 +109,7 @@ export class SettingsManager implements ISettingsManager {
       constants.extension.settingsFilename,
     );
     try {
-      await unlinkAsync(extensionSettingsLegacyFilePath);
+      await this.fs.unlinkAsync(extensionSettingsLegacyFilePath);
     } catch (error) {
       ErrorHandler.logError(error);
     }

@@ -1,11 +1,12 @@
-import { readFileAsync } from '../common/fsAsync';
 import { ConfigManager } from '../configuration/configManager';
 import { constants } from '../constants';
 import * as models from '../models';
 import { Utils } from '../utils';
 
 export class ManifestReader {
-  public static async getToggledValue(
+  constructor(private fs: models.IFSAsync) {}
+
+  public async getToggledValue(
     preset: models.PresetNames,
     presets: models.IPresets,
   ): Promise<boolean> {
@@ -23,15 +24,12 @@ export class ManifestReader {
     return isNonIconsRelatedPreset()
       ? !presets[presetName]
       : isFoldersRelatedPreset()
-      ? !(await ManifestReader.folderIconsDisabled(presetName))
-      : ManifestReader.iconsDisabled(models.IconNames[presetName]);
+      ? !(await this.folderIconsDisabled(presetName))
+      : this.iconsDisabled(models.IconNames[presetName]);
   }
 
-  public static async iconsDisabled(
-    name: string,
-    isFile = true,
-  ): Promise<boolean> {
-    const iconManifest: string = await this.getIconManifest();
+  public async iconsDisabled(name: string, isFile = true): Promise<boolean> {
+    const iconManifest = await this.getIconManifest();
     const iconsJson: models.IIconSchema = Utils.parseJSONSafe<
       models.IIconSchema
     >(iconManifest);
@@ -54,9 +52,7 @@ export class ManifestReader {
     );
   }
 
-  public static async folderIconsDisabled(
-    presetName: string,
-  ): Promise<boolean> {
+  public async folderIconsDisabled(presetName: string): Promise<boolean> {
     const manifest: string = await this.getIconManifest();
     const iconsJson: models.IIconSchema = Utils.parseJSONSafe<
       models.IIconSchema
@@ -80,13 +76,13 @@ export class ManifestReader {
     }
   }
 
-  private static async getIconManifest(): Promise<string> {
+  private async getIconManifest(): Promise<string> {
     const manifestFilePath = Utils.pathUnixJoin(
       ConfigManager.sourceDir,
       constants.iconsManifest.filename,
     );
     try {
-      return readFileAsync(manifestFilePath, 'utf8');
+      return this.fs.readFileAsync(manifestFilePath);
     } catch (err) {
       return null;
     }

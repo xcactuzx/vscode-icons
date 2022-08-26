@@ -7,7 +7,8 @@ import { ExtensionManager } from '../../src/app/extensionManager';
 import { ErrorHandler } from '../../src/common/errorHandler';
 import { ConfigManager } from '../../src/configuration/configManager';
 import { constants } from '../../src/constants';
-import { IconsGenerator } from '../../src/iconsManifest';
+import { FSNode } from '../../src/fs/fsNode';
+import { IconsGenerator, ManifestReader } from '../../src/iconsManifest';
 import { IntegrityManager } from '../../src/integrity/integrityManager';
 import * as models from '../../src/models';
 import { NotificationManager } from '../../src/notification/notificationManager';
@@ -33,8 +34,12 @@ describe('ExtensionManager: messages tests', function () {
     let extensionManager: models.IExtensionManager;
     let vsiconsClone: models.IVSIcons;
     let state: models.IState;
+    let fs: models.IFSAsync;
+    let manifestReader: ManifestReader;
 
     beforeEach(function () {
+      fs = new FSNode();
+      manifestReader = new ManifestReader(fs);
       sandbox = sinon.createSandbox();
 
       vscodeManagerStub = sandbox.createStubInstance<models.IVSCodeManager>(
@@ -84,6 +89,7 @@ describe('ExtensionManager: messages tests', function () {
         iconsGeneratorStub,
         padMngStub,
         integrityManagerStub,
+        manifestReader,
       );
 
       logErrorStub = sandbox.stub(ErrorHandler, 'logError');
@@ -316,9 +322,10 @@ describe('ExtensionManager: messages tests', function () {
         expect(logErrorStub.calledOnceWithExactly(error)).to.be.true;
       });
 
+      // TODO: (ROB) add open again when support for web is there
       context(`selecting`, function () {
         let activationCommandStub: sinon.SinonStub;
-        let openStub: sinon.SinonStub;
+        // let openStub: sinon.SinonStub;
 
         beforeEach(function () {
           activationCommandStub = sandbox.stub(
@@ -326,7 +333,7 @@ describe('ExtensionManager: messages tests', function () {
             // @ts-ignore
             'activationCommand',
           );
-          openStub = sandbox.stub(Utils, 'open');
+          // openStub = sandbox.stub(Utils, 'open');
         });
 
         context(`an unsupported option`, function () {
@@ -344,7 +351,7 @@ describe('ExtensionManager: messages tests', function () {
               ),
             ).to.be.true;
             expect(activationCommandStub.called).to.be.false;
-            expect(openStub.called).to.be.false;
+            // expect(openStub.called).to.be.false;
           });
         });
 
@@ -386,9 +393,9 @@ describe('ExtensionManager: messages tests', function () {
               ),
             ).to.be.true;
             expect(notifyManagerStub.notifyInfo.calledTwice).to.be.true;
-            expect(
-              openStub.calledOnceWithExactly(constants.urlOfficialApi),
-            ).to.be.true;
+            // expect(
+            //   openStub.calledOnceWithExactly(constants.urlOfficialApi),
+            // ).to.be.true;
           });
         });
 
@@ -410,9 +417,9 @@ describe('ExtensionManager: messages tests', function () {
               ),
             ).to.be.true;
             expect(notifyManagerStub.notifyInfo.calledTwice).to.be.true;
-            expect(
-              openStub.calledOnceWithExactly(constants.urlReadme),
-            ).to.be.true;
+            // expect(
+            //   openStub.calledOnceWithExactly(constants.urlReadme),
+            // ).to.be.true;
           });
         });
       });
@@ -436,12 +443,13 @@ describe('ExtensionManager: messages tests', function () {
         expect(logErrorStub.calledOnceWithExactly(error)).to.be.true;
       });
 
+      // TODO: (ROB) add open again when support for web is there
       context(`selecting`, function () {
-        let openStub: sinon.SinonStub;
+        // let openStub: sinon.SinonStub;
 
-        beforeEach(function () {
-          openStub = sandbox.stub(Utils, 'open');
-        });
+        // beforeEach(function () {
+        //   openStub = sandbox.stub(Utils, 'open');
+        // });
 
         context(`an unsupported option`, function () {
           it(`does nothing`, async function () {
@@ -457,7 +465,7 @@ describe('ExtensionManager: messages tests', function () {
                 models.LangResourceKeys.dontShowThis,
               ),
             ).to.be.true;
-            expect(openStub.called).to.be.false;
+            // expect(openStub.called).to.be.false;
             expect(
               configManagerStub.updateDontShowNewVersionMessage.called,
             ).to.be.false;
@@ -480,9 +488,9 @@ describe('ExtensionManager: messages tests', function () {
                 models.LangResourceKeys.dontShowThis,
               ),
             ).to.be.true;
-            expect(
-              openStub.calledOnceWithExactly(constants.urlReleaseNote),
-            ).to.be.true;
+            // expect(
+            //   openStub.calledOnceWithExactly(constants.urlReleaseNote),
+            // ).to.be.true;
           });
         });
 

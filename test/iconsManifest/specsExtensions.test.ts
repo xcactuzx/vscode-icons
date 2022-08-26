@@ -3,11 +3,13 @@
 import { expect } from 'chai';
 import { isEmpty, isEqual, uniqBy } from 'lodash';
 import { join } from 'path';
-import { existsAsync } from '../../src/common/fsAsync';
 import { ConfigManager } from '../../src/configuration/configManager';
 import { constants } from '../../src/constants';
+import { FSNode } from '../../src/fs/fsNode';
 import { extensions as files } from '../../src/iconsManifest/supportedExtensions';
 import { FileFormat, IFileExtension } from '../../src/models';
+
+const fs = new FSNode();
 
 describe('Specifications of supported extensions: tests', function () {
   context('ensures that', function () {
@@ -37,7 +39,7 @@ describe('Specifications of supported extensions: tests', function () {
               }`;
             const iconFilePath = join(iconsDirPath, filename);
 
-            const pathExists = await existsAsync(iconFilePath);
+            const pathExists = await fs.existsAsync(iconFilePath);
 
             expect(pathExists).to.be.true;
           }
@@ -100,7 +102,7 @@ describe('Specifications of supported extensions: tests', function () {
               }`;
               const iconFilePath = join(iconsDirPath, filename);
 
-              const pathExists = await existsAsync(iconFilePath);
+              const pathExists = await fs.existsAsync(iconFilePath);
 
               expect(pathExists).to.be.true;
             }

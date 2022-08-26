@@ -5,6 +5,7 @@ import { cloneDeep } from 'lodash';
 import * as sinon from 'sinon';
 import { ExtensionManager } from '../../src/app/extensionManager';
 import { ConfigManager } from '../../src/configuration/configManager';
+import { FSNode } from '../../src/fs/fsNode';
 import { IconsGenerator, ManifestReader } from '../../src/iconsManifest';
 import { IntegrityManager } from '../../src/integrity/integrityManager';
 import * as models from '../../src/models';
@@ -28,8 +29,12 @@ describe('ExtensionManager: actions tests', function () {
     let showCustomizationMessageStub: sinon.SinonStub;
     let extensionManager: models.IExtensionManager;
     let vsiconsClone: models.IVSIcons;
+    let fs: models.IFSAsync;
+    let manifestReader: ManifestReader;
 
     beforeEach(function () {
+      fs = new FSNode();
+      manifestReader = new ManifestReader(fs);
       sandbox = sinon.createSandbox();
 
       vscodeManagerStub = sandbox.createStubInstance<models.IVSCodeManager>(
@@ -76,6 +81,7 @@ describe('ExtensionManager: actions tests', function () {
         iconsGeneratorStub,
         padMngStub,
         integrityManagerStub,
+        manifestReader,
       );
 
       showCustomizationMessageStub = sandbox.stub(
@@ -207,7 +213,7 @@ describe('ExtensionManager: actions tests', function () {
       let togglePreset: (...arg: unknown[]) => Promise<void>;
 
       beforeEach(function () {
-        getToggledValueStub = sandbox.stub(ManifestReader, 'getToggledValue');
+        getToggledValueStub = sandbox.stub(manifestReader, 'getToggledValue');
         togglePreset =
           // @ts-ignore
           extensionManager.togglePreset as (...arg: unknown[]) => Promise<void>;

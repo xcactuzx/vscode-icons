@@ -2,11 +2,12 @@
 /* eslint-disable no-unused-expressions */
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import * as fsAsync from '../../src/common/fsAsync';
 import { ConfigManager } from '../../src/configuration/configManager';
+import { FSNode } from '../../src/fs/fsNode';
 import { ManifestReader } from '../../src/iconsManifest';
 import {
   IConfigManager,
+  IFSAsync,
   IProjectAutoDetectionManager,
   IVSCodeManager,
   LangResourceKeys,
@@ -26,9 +27,11 @@ describe('ProjectAutoDetectionManager: NestJS project tests', function () {
     let getPresetStub: sinon.SinonStub;
     let parseJSONStub: sinon.SinonStub;
     let padManager: IProjectAutoDetectionManager;
+    let fsAsync: IFSAsync;
 
     beforeEach(() => {
       sandbox = sinon.createSandbox();
+      fsAsync = new FSNode();
 
       configManagerStub = sandbox.createStubInstance<IConfigManager>(
         ConfigManager,

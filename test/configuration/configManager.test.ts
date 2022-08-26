@@ -3,7 +3,6 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { cloneDeep } from 'lodash';
-import * as fsAsync from '../../src/common/fsAsync';
 import * as os from 'os';
 import * as path from 'path';
 import {
@@ -19,6 +18,8 @@ import { ErrorHandler } from '../../src/common/errorHandler';
 import { ConfigManager } from '../../src/configuration/configManager';
 import { VSCodeManager } from '../../src/vscode/vscodeManager';
 import { vsicons } from '../fixtures/vsicons';
+import { IFSAsync } from '../../src/models/fs';
+import { FSNode } from '../../src/fs/fsNode';
 
 describe('ConfigManager: tests', function () {
   context('ensures that', function () {
@@ -37,11 +38,13 @@ describe('ConfigManager: tests', function () {
     let vsiconsClone: IVSIcons;
     let configManager: IConfigManager;
     let splitter: (content: string) => string[];
+    let fs: IFSAsync;
 
     beforeEach(function () {
       sandbox = sinon.createSandbox();
+      fs = new FSNode();
 
-      readdirAsyncStub = sandbox.stub(fsAsync, 'readdirAsync');
+      readdirAsyncStub = sandbox.stub(fs, 'readdirAsync');
       envStub = sandbox.stub(process, 'env');
       logErrorStub = sandbox.stub(ErrorHandler, 'logError');
       updateFileStub = sandbox.stub(Utils, 'updateFile');
@@ -77,7 +80,7 @@ describe('ConfigManager: tests', function () {
         getConfiguration: getConfigurationStub,
       }));
 
-      configManager = new ConfigManager(vscodeManagerStub);
+      configManager = new ConfigManager(vscodeManagerStub, fs);
 
       splitter = (content: string): string[] => content.split('\n');
 
@@ -304,7 +307,7 @@ describe('ConfigManager: tests', function () {
 
           updateFileStub.callsArgWith(1, ['']).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.called).to.be.false;
         });
@@ -314,7 +317,7 @@ describe('ConfigManager: tests', function () {
         it('on extension full uninstall', async function () {
           updateFileStub.callsArgWith(1, ['']).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.calledOnce).to.be.true;
         });
@@ -324,7 +327,7 @@ describe('ConfigManager: tests', function () {
         const error = new Error();
         updateFileStub.rejects(error);
 
-        await ConfigManager.removeSettings();
+        await ConfigManager.removeSettings(fs);
 
         expect(logErrorStub.calledOnceWithExactly(error)).to.be.true;
       });
@@ -356,7 +359,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', 'data'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('freebsd');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -368,7 +371,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', '.vscode'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('freebsd');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -382,7 +385,7 @@ describe('ConfigManager: tests', function () {
                   dirPath.replace('%appDir%', '.vscode-insiders'),
                 );
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('freebsd');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -396,7 +399,7 @@ describe('ConfigManager: tests', function () {
                   dirPath.replace('%appDir%', '.vscode-oss-dev'),
                 );
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('freebsd');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -408,7 +411,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', '.vscode-oss'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('freebsd');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -431,7 +434,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', 'data'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('linux');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -443,7 +446,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', '.vscode'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('linux');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -457,7 +460,7 @@ describe('ConfigManager: tests', function () {
                   dirPath.replace('%appDir%', '.vscode-insiders'),
                 );
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('linux');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -471,7 +474,7 @@ describe('ConfigManager: tests', function () {
                   dirPath.replace('%appDir%', '.vscode-oss-dev'),
                 );
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('linux');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -483,7 +486,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', '.vscode-oss'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('linux');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -507,20 +510,20 @@ describe('ConfigManager: tests', function () {
                   pathUnixJoinStub.returns(userPath);
                   dirnameStub.returns(dirPath.replace('%appDir%', 'data'));
 
-                  await ConfigManager.removeSettings();
+                  await ConfigManager.removeSettings(fs);
 
                   expect(process.platform).to.equal('darwin');
                   expect(updateFileStub.firstCall.args[0]).to.match(expected);
                 });
 
                 it(`of 'vscode-insiders'`, async function () {
-                  sandbox.stub(fsAsync, 'existsAsync').resolves(true);
+                  sandbox.stub(fs, 'existsAsync').resolves(true);
                   const userPath = `${process.env.VSCODE_CWD}/code-insiders-portable-data/user-data/User`;
                   const expected = new RegExp(`^${userPath}`);
                   pathUnixJoinStub.returns(userPath);
                   dirnameStub.returns(dirPath.replace('%appDir%', 'data'));
 
-                  await ConfigManager.removeSettings();
+                  await ConfigManager.removeSettings(fs);
 
                   expect(process.platform).to.equal('darwin');
                   expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -533,7 +536,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', '.vscode'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('darwin');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -547,7 +550,7 @@ describe('ConfigManager: tests', function () {
                   dirPath.replace('%appDir%', '.vscode-insiders'),
                 );
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('darwin');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -561,7 +564,7 @@ describe('ConfigManager: tests', function () {
                   dirPath.replace('%appDir%', '.vscode-oss-dev'),
                 );
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('darwin');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -573,7 +576,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', '.vscode-oss'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('darwin');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -601,7 +604,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', 'data'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('win32');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -615,7 +618,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', '.vscode'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('win32');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -631,7 +634,7 @@ describe('ConfigManager: tests', function () {
                   dirPath.replace('%appDir%', '.vscode-insiders'),
                 );
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('win32');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -647,7 +650,7 @@ describe('ConfigManager: tests', function () {
                   dirPath.replace('%appDir%', '.vscode-oss-dev'),
                 );
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('win32');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -661,7 +664,7 @@ describe('ConfigManager: tests', function () {
                 pathUnixJoinStub.returns(userPath);
                 dirnameStub.returns(dirPath.replace('%appDir%', '.vscode-oss'));
 
-                await ConfigManager.removeSettings();
+                await ConfigManager.removeSettings(fs);
 
                 expect(process.platform).to.equal('win32');
                 expect(updateFileStub.firstCall.args[0]).to.match(expected);
@@ -686,7 +689,7 @@ describe('ConfigManager: tests', function () {
         readdirAsyncStub.resolves([`${constants.extension.name}-1.1.0`]);
         updateFileStub.resolves();
 
-        await ConfigManager.removeSettings();
+        await ConfigManager.removeSettings(fs);
 
         expect(isSingleInstallationSpy.calledOnce).to.be.true;
         expect(await isSingleInstallationSpy.firstCall.returnValue).to.be.true;
@@ -698,7 +701,7 @@ describe('ConfigManager: tests', function () {
           `${constants.extension.name}-2.1.0`,
         ]);
 
-        await ConfigManager.removeSettings();
+        await ConfigManager.removeSettings(fs);
 
         expect(isSingleInstallationSpy.calledOnce).to.be.true;
         expect(await isSingleInstallationSpy.firstCall.returnValue).to.be.false;
@@ -728,7 +731,7 @@ describe('ConfigManager: tests', function () {
           );
           updateFileStub.callsArgWith(1, content).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.calledOnce).to.be.true;
           expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -747,7 +750,7 @@ describe('ConfigManager: tests', function () {
           );
           updateFileStub.callsArgWith(1, content).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.calledOnce).to.be.true;
           expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -767,7 +770,7 @@ describe('ConfigManager: tests', function () {
           );
           updateFileStub.callsArgWith(1, content).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.calledOnce).to.be.true;
           expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -790,7 +793,7 @@ describe('ConfigManager: tests', function () {
           );
           updateFileStub.callsArgWith(1, content).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.calledOnce).to.be.true;
           expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -816,7 +819,7 @@ describe('ConfigManager: tests', function () {
           );
           updateFileStub.callsArgWith(1, content).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.calledOnce).to.be.true;
           expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -845,7 +848,7 @@ describe('ConfigManager: tests', function () {
             );
             updateFileStub.callsArgWith(1, content).resolves();
 
-            await ConfigManager.removeSettings();
+            await ConfigManager.removeSettings(fs);
 
             expect(updateFileStub.calledOnce).to.be.true;
             expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -881,7 +884,7 @@ describe('ConfigManager: tests', function () {
             );
             updateFileStub.callsArgWith(1, content).resolves();
 
-            await ConfigManager.removeSettings();
+            await ConfigManager.removeSettings(fs);
 
             expect(updateFileStub.calledOnce).to.be.true;
             expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -914,7 +917,7 @@ describe('ConfigManager: tests', function () {
           const expected = splitter(`{\n"window.zoomLevel": 0\n` + '}');
           updateFileStub.callsArgWith(1, content).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.calledOnce).to.be.true;
           expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -933,7 +936,7 @@ describe('ConfigManager: tests', function () {
           );
           updateFileStub.callsArgWith(1, content).resolves();
 
-          await ConfigManager.removeSettings();
+          await ConfigManager.removeSettings(fs);
 
           expect(updateFileStub.calledOnce).to.be.true;
           expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -965,7 +968,7 @@ describe('ConfigManager: tests', function () {
             );
             updateFileStub.callsArgWith(1, content).resolves();
 
-            await ConfigManager.removeSettings();
+            await ConfigManager.removeSettings(fs);
 
             expect(updateFileStub.calledOnce).to.be.true;
             expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -984,7 +987,7 @@ describe('ConfigManager: tests', function () {
             );
             updateFileStub.callsArgWith(1, content).resolves();
 
-            await ConfigManager.removeSettings();
+            await ConfigManager.removeSettings(fs);
 
             expect(updateFileStub.calledOnce).to.be.true;
             expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -1015,7 +1018,7 @@ describe('ConfigManager: tests', function () {
             );
             updateFileStub.callsArgWith(1, content).resolves();
 
-            await ConfigManager.removeSettings();
+            await ConfigManager.removeSettings(fs);
 
             expect(updateFileStub.calledOnce).to.be.true;
             expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -1048,7 +1051,7 @@ describe('ConfigManager: tests', function () {
             );
             updateFileStub.callsArgWith(1, content).resolves();
 
-            await ConfigManager.removeSettings();
+            await ConfigManager.removeSettings(fs);
 
             expect(updateFileStub.calledOnce).to.be.true;
             expect(updateFileStub.firstCall.callback).to.be.a('function');
@@ -1198,7 +1201,7 @@ describe('ConfigManager: tests', function () {
           const rootDir = '/';
           const joinedDir = path.posix.join('', customIconsDirPath);
           vscodeManagerStub.getWorkspacePaths.returns([rootDir]);
-          sandbox.stub(fsAsync, 'existsAsync').resolves(false);
+          sandbox.stub(fs, 'existsAsync').resolves(false);
           pathUnixJoinStub.returns(joinedDir);
 
           const dirPath = await configManager.getCustomIconsDirPath(
@@ -1215,7 +1218,7 @@ describe('ConfigManager: tests', function () {
           const rootDir = '/';
           const joinedDir = path.posix.join(rootDir, customIconsDirPath);
           vscodeManagerStub.getWorkspacePaths.returns([rootDir]);
-          sandbox.stub(fsAsync, 'existsAsync').resolves(true);
+          sandbox.stub(fs, 'existsAsync').resolves(true);
           pathUnixJoinStub.returns(joinedDir);
 
           const dirPath = await configManager.getCustomIconsDirPath(

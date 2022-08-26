@@ -6,9 +6,9 @@ import { resolve } from 'path';
 import * as sinon from 'sinon';
 import * as packageJson from '../../../../package.json';
 import { ErrorHandler } from '../../../src/common/errorHandler';
-import * as fsAsync from '../../../src/common/fsAsync';
 import { ConfigManager } from '../../../src/configuration/configManager';
 import { constants } from '../../../src/constants';
+import { FSNode } from '../../../src/fs/fsNode';
 import {
   CustomsMerger,
   IconsGenerator,
@@ -20,6 +20,7 @@ import {
   IConfigManager,
   IFileCollection,
   IFolderCollection,
+  IFSAsync,
   IIconsGenerator,
   IPresets,
   IVSCodeManager,
@@ -46,9 +47,11 @@ describe('IconsGenerator: tests', function () {
     let filesCollection: IFileCollection;
     let foldersCollection: IFolderCollection;
     let vsiconsClone: IVSIcons;
+    let fsAsync: IFSAsync;
 
     beforeEach(function () {
       sandbox = sinon.createSandbox();
+      fsAsync = new FSNode();
 
       vscodeManagerStub = sinon.createStubInstance<IVSCodeManager>(
         VSCodeManager,

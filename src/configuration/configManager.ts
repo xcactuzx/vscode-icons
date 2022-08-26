@@ -1,7 +1,6 @@
 import { cloneDeep, isEqual, unionWith } from 'lodash';
 import { dirname, isAbsolute, resolve } from 'path';
 import { ErrorHandler } from '../common/errorHandler';
-import { existsAsync, readdirAsync } from '../common/fsAsync';
 import { constants } from '../constants';
 import {
   ConfigurationTarget,
@@ -14,6 +13,7 @@ import {
   IVSIcons,
 } from '../models';
 import { Utils } from '../utils';
+import { IFSAsync } from '../models/fs';
 
 export class ConfigManager implements IConfigManager {
   private static rootdir: string;
@@ -21,13 +21,12 @@ export class ConfigManager implements IConfigManager {
   private readonly configuration: IVSCodeWorkspaceConfiguration;
   private initVSIconsConfig: IVSIcons;
 
-  constructor(private vscodeManager: IVSCodeManager) {
+  constructor(private vscodeManager: IVSCodeManager, private fs: IFSAsync) {
     // Acts as a static reference to configuration
     // Should only be used when you want to access the configuration functions
     // DO NOT use it to access the `vsicons` configuration,
-    // use the `vsicons` function instead
+    // use the `vsicons` method instead
     this.configuration = this.vscodeManager.workspace.getConfiguration();
-
     this.initVSIconsConfig = this.vsicons;
   }
 
@@ -58,7 +57,7 @@ export class ConfigManager implements IConfigManager {
    * Returns a `user` and `workspace` merged `vsicons` configuration
    *
    * **Note:** When you want to access `vsicons` configuration always
-   * call this function
+   * call this method
    */
   public get vsicons(): IVSIcons {
     // ALWAYS use 'getConfiguration' to get a fresh copy of the `vsicons` configurations
@@ -84,13 +83,13 @@ export class ConfigManager implements IConfigManager {
     return mergedConfig;
   }
 
-  public static async removeSettings(): Promise<void> {
-    const isSingleInstallation = await this.isSingleInstallation();
+  public static async removeSettings(fs: IFSAsync): Promise<void> {
+    const isSingleInstallation = await this.isSingleInstallation(fs);
     if (!isSingleInstallation) {
       return;
     }
     const vscodeSettingsFilePath = Utils.pathUnixJoin(
-      await this.getAppUserPath(dirname(__filename)),
+      await this.getAppUserPath(dirname(__filename), fs),
       constants.vscode.settingsFilename,
     );
     const replacer = (rawText: string[]): string[] => {
@@ -100,13 +99,14 @@ export class ConfigManager implements IConfigManager {
       return rawText;
     };
     try {
-      await Utils.updateFile(vscodeSettingsFilePath, replacer);
+      const utils = new Utils(fs);
+      await utils.updateFile(vscodeSettingsFilePath, replacer);
     } catch (error) {
       ErrorHandler.logError(error);
     }
   }
 
-  public static async isSingleInstallation(): Promise<boolean> {
+  public static async isSingleInstallation(fs: IFSAsync): Promise<boolean> {
     const regex = new RegExp(
       `(.+[\\|/]extensions[\\|/])(?:.*${constants.extension.name})`,
     );
@@ -115,12 +115,15 @@ export class ConfigManager implements IConfigManager {
       (matches && matches.length > 0 && matches[1]) || './';
     const extensionNameRegExp = new RegExp(`.*${constants.extension.name}`);
     const existingInstallations: number = (
-      await readdirAsync(vscodeExtensionDirPath)
+      await fs.readdirAsync(vscodeExtensionDirPath)
     ).filter((filename: string) => extensionNameRegExp.test(filename)).length;
     return existingInstallations === 1;
   }
 
-  private static async getAppUserPath(dirPath: string): Promise<string> {
+  private static async getAppUserPath(
+    dirPath: string,
+    fs: IFSAsync,
+  ): Promise<string> {
     const vscodeAppName = /[\\|/]\.vscode-oss-dev/i.test(dirPath)
       ? 'code-oss-dev'
       : /[\\|/]\.vscode-oss/i.test(dirPath)
@@ -135,7 +138,7 @@ export class ConfigManager implements IConfigManager {
       if (vscodeAppName !== 'user-data') {
         return undefined;
       }
-      const isInsiders = await existsAsync(
+      const isInsiders = await fs.existsAsync(
         Utils.pathUnixJoin(
           process.env.VSCODE_CWD,
           'code-insiders-portable-data',
@@ -245,7 +248,7 @@ export class ConfigManager implements IConfigManager {
       return dPath;
     }
     const iterator = async (wsp: string): Promise<string> =>
-      (await existsAsync(wsp)) ? wsp : '';
+      (await this.fs.existsAsync(wsp)) ? wsp : '';
 
     const promises: Array<Promise<string>> = [];
     workspacePaths.forEach((wsp: string) => promises.push(iterator(wsp)));

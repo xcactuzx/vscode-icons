@@ -2,9 +2,9 @@
 /* eslint-disable no-unused-expressions */
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import * as fsAsync from '../../../src/common/fsAsync';
+import { FSNode } from '../../../src/fs/fsNode';
 import { ManifestReader } from '../../../src/iconsManifest';
-import { Projects, PresetNames, IPresets } from '../../../src/models';
+import { Projects, PresetNames, IPresets, IFSAsync } from '../../../src/models';
 import { Utils } from '../../../src/utils';
 
 describe('ManifestReader: tests', function () {
@@ -12,11 +12,15 @@ describe('ManifestReader: tests', function () {
     let sandbox: sinon.SinonSandbox;
     let readFileAsyncStub: sinon.SinonStub;
     let parseJSONStub: sinon.SinonStub;
+    let fs: IFSAsync;
+    let manifestReader: ManifestReader;
 
     beforeEach(function () {
+      fs = new FSNode();
+      manifestReader = new ManifestReader(fs);
       sandbox = sinon.createSandbox();
 
-      readFileAsyncStub = sandbox.stub(fsAsync, 'readFileAsync');
+      readFileAsyncStub = sandbox.stub(fs, 'readFileAsync');
       parseJSONStub = sandbox.stub(Utils, 'parseJSONSafe');
     });
 
@@ -42,7 +46,7 @@ describe('ManifestReader: tests', function () {
 
       context(`for non icons related presets`, function () {
         it(`returns 'true' when the preset is 'false'`, async function () {
-          const sut = await ManifestReader.getToggledValue(
+          const sut = await manifestReader.getToggledValue(
             PresetNames.hideExplorerArrows,
             presets,
           );
@@ -53,7 +57,7 @@ describe('ManifestReader: tests', function () {
         it(`returns 'false' when the preset is 'true'`, async function () {
           presets.hideExplorerArrows = true;
 
-          const sut = await ManifestReader.getToggledValue(
+          const sut = await manifestReader.getToggledValue(
             PresetNames.hideExplorerArrows,
             presets,
           );
@@ -70,7 +74,7 @@ describe('ManifestReader: tests', function () {
               '"_fd_aws": {} }, "folderNames": { "aws": "_fd_aws" } }';
             parseJSONStub.returns(JSON.parse(iconManifest));
 
-            const sut = await ManifestReader.getToggledValue(
+            const sut = await manifestReader.getToggledValue(
               PresetNames.hideFolders,
               presets,
             );
@@ -84,7 +88,7 @@ describe('ManifestReader: tests', function () {
               '"folderNames": {} }';
             parseJSONStub.returns(JSON.parse(iconManifest));
 
-            const sut = await ManifestReader.getToggledValue(
+            const sut = await manifestReader.getToggledValue(
               PresetNames.hideFolders,
               presets,
             );
@@ -100,7 +104,7 @@ describe('ManifestReader: tests', function () {
               '"_fd_aws": {} }, "folderNames": { "aws": "_fd_aws" } }';
             parseJSONStub.returns(JSON.parse(iconManifest));
 
-            const sut = await ManifestReader.getToggledValue(
+            const sut = await manifestReader.getToggledValue(
               PresetNames.foldersAllDefaultIcon,
               presets,
             );
@@ -114,7 +118,7 @@ describe('ManifestReader: tests', function () {
               '"folderNames": {} }';
             parseJSONStub.returns(JSON.parse(iconManifest));
 
-            const sut = await ManifestReader.getToggledValue(
+            const sut = await manifestReader.getToggledValue(
               PresetNames.foldersAllDefaultIcon,
               presets,
             );
@@ -129,7 +133,7 @@ describe('ManifestReader: tests', function () {
           const iconManifest = '{ "iconDefinitions": {} }';
           parseJSONStub.returns(JSON.parse(iconManifest));
 
-          const sut = await ManifestReader.getToggledValue(
+          const sut = await manifestReader.getToggledValue(
             PresetNames.angular,
             presets,
           );
@@ -141,7 +145,7 @@ describe('ManifestReader: tests', function () {
           const iconManifest = '{ "iconDefinitions": { "_f_ng_icon": {} } }';
           parseJSONStub.returns(JSON.parse(iconManifest));
 
-          const sut = await ManifestReader.getToggledValue(
+          const sut = await manifestReader.getToggledValue(
             PresetNames.angular,
             presets,
           );
@@ -157,7 +161,7 @@ describe('ManifestReader: tests', function () {
           const iconManifest = '{ "iconDefinitions": { "_f_ng_": {} } }';
           parseJSONStub.returns(JSON.parse(iconManifest));
 
-          const sut = await ManifestReader.iconsDisabled(Projects.angular);
+          const sut = await manifestReader.iconsDisabled(Projects.angular);
 
           expect(sut).to.be.false;
         });
@@ -166,7 +170,7 @@ describe('ManifestReader: tests', function () {
           const iconManifest = '{ "iconDefinitions": { "_f_codecov": {} } }';
           parseJSONStub.returns(JSON.parse(iconManifest));
 
-          const sut = await ManifestReader.iconsDisabled(Projects.angular);
+          const sut = await manifestReader.iconsDisabled(Projects.angular);
 
           expect(sut).to.be.true;
         });
@@ -174,7 +178,7 @@ describe('ManifestReader: tests', function () {
         it('disabled, if they do NOT exist', async function () {
           parseJSONStub.returns(null);
 
-          const sut = await ManifestReader.iconsDisabled(Projects.angular);
+          const sut = await manifestReader.iconsDisabled(Projects.angular);
 
           expect(sut).to.be.true;
         });
@@ -182,7 +186,7 @@ describe('ManifestReader: tests', function () {
         it('assumed disabled, if icon manifest file fails to be loaded', async function () {
           readFileAsyncStub.throws(Error);
 
-          const sut = await ManifestReader.iconsDisabled(Projects.angular);
+          const sut = await manifestReader.iconsDisabled(Projects.angular);
 
           expect(sut).to.be.true;
         });
@@ -192,7 +196,7 @@ describe('ManifestReader: tests', function () {
             const iconManifest = '{ "iconDefinitions": { "_fd_aws": {} } }';
             parseJSONStub.returns(JSON.parse(iconManifest));
 
-            const sut = await ManifestReader.iconsDisabled('aws', false);
+            const sut = await manifestReader.iconsDisabled('aws', false);
 
             expect(sut).to.be.false;
           });
@@ -201,7 +205,7 @@ describe('ManifestReader: tests', function () {
             const iconManifest = '{ "iconDefinitions": { "_fd_git": {} } }';
             parseJSONStub.returns(JSON.parse(iconManifest));
 
-            const sut = await ManifestReader.iconsDisabled('aws', false);
+            const sut = await manifestReader.iconsDisabled('aws', false);
 
             expect(sut).to.be.true;
           });
@@ -209,7 +213,7 @@ describe('ManifestReader: tests', function () {
           it('disabled, if they do NOT exist', async function () {
             parseJSONStub.returns(null);
 
-            const sut = await ManifestReader.iconsDisabled('aws', false);
+            const sut = await manifestReader.iconsDisabled('aws', false);
 
             expect(sut).to.be.true;
           });
@@ -217,7 +221,7 @@ describe('ManifestReader: tests', function () {
           it('assumed disabled, if icon manifest file fails to be loaded', async function () {
             readFileAsyncStub.throws(Error);
 
-            const sut = await ManifestReader.iconsDisabled('aws', false);
+            const sut = await manifestReader.iconsDisabled('aws', false);
 
             expect(sut).to.be.true;
           });
@@ -232,7 +236,7 @@ describe('ManifestReader: tests', function () {
           it('disabled, if they do NOT exist', async function () {
             parseJSONStub.returns(null);
 
-            const sut = await ManifestReader.folderIconsDisabled('');
+            const sut = await manifestReader.folderIconsDisabled('');
 
             expect(sut).to.be.true;
           });
@@ -240,7 +244,7 @@ describe('ManifestReader: tests', function () {
           it('assumed disabled, if reading the icon manifest file fails', async function () {
             readFileAsyncStub.throws(Error);
 
-            const sut = await ManifestReader.folderIconsDisabled('');
+            const sut = await manifestReader.folderIconsDisabled('');
 
             expect(sut).to.be.true;
           });
@@ -252,7 +256,7 @@ describe('ManifestReader: tests', function () {
                 '"_fd_aws": {} }, "folderNames": { "aws": "_fd_aws" } }';
               parseJSONStub.returns(JSON.parse(iconManifest));
 
-              const sut = await ManifestReader.folderIconsDisabled(
+              const sut = await manifestReader.folderIconsDisabled(
                 'hideFolders',
               );
 
@@ -265,7 +269,7 @@ describe('ManifestReader: tests', function () {
                 '"folderNames": {} }';
               parseJSONStub.returns(JSON.parse(iconManifest));
 
-              const sut = await ManifestReader.folderIconsDisabled(
+              const sut = await manifestReader.folderIconsDisabled(
                 'hideFolders',
               );
 
@@ -278,7 +282,7 @@ describe('ManifestReader: tests', function () {
                 '"folderNames": {} }';
               parseJSONStub.returns(JSON.parse(iconManifest));
 
-              const sut = await ManifestReader.folderIconsDisabled(
+              const sut = await manifestReader.folderIconsDisabled(
                 'hideFolders',
               );
 
@@ -293,7 +297,7 @@ describe('ManifestReader: tests', function () {
                 '"_fd_aws": {} }, "folderNames": { "aws": "_fd_aws" } }';
               parseJSONStub.returns(JSON.parse(iconManifest));
 
-              const sut = await ManifestReader.folderIconsDisabled(
+              const sut = await manifestReader.folderIconsDisabled(
                 'foldersAllDefaultIcon',
               );
 
@@ -306,7 +310,7 @@ describe('ManifestReader: tests', function () {
                 '"folderNames": {} }';
               parseJSONStub.returns(JSON.parse(iconManifest));
 
-              const sut = await ManifestReader.folderIconsDisabled(
+              const sut = await manifestReader.folderIconsDisabled(
                 'foldersAllDefaultIcon',
               );
 
@@ -334,7 +338,7 @@ describe('ManifestReader: tests', function () {
                 )
                 .map(async (preset: string) => {
                   try {
-                    await ManifestReader.folderIconsDisabled(preset);
+                    await manifestReader.folderIconsDisabled(preset);
                   } catch (error) {
                     expect(error).to.match(/Not Implemented/);
                   }

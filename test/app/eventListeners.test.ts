@@ -7,7 +7,8 @@ import { ExtensionManager } from '../../src/app/extensionManager';
 import { ErrorHandler } from '../../src/common/errorHandler';
 import { ConfigManager } from '../../src/configuration/configManager';
 import { constants } from '../../src/constants';
-import { IconsGenerator } from '../../src/iconsManifest';
+import { FSNode } from '../../src/fs/fsNode';
+import { IconsGenerator, ManifestReader } from '../../src/iconsManifest';
 import { IntegrityManager } from '../../src/integrity/integrityManager';
 import * as models from '../../src/models';
 import { NotificationManager } from '../../src/notification/notificationManager';
@@ -33,8 +34,12 @@ describe('ExtensionManager: event listeners tests', function () {
     let extensionManager: models.IExtensionManager;
     let vsiconsClone: models.IVSIcons;
     let state: models.IState;
+    let fs: models.IFSAsync;
+    let manifestReader: ManifestReader;
 
     beforeEach(function () {
+      fs = new FSNode();
+      manifestReader = new ManifestReader(fs);
       sandbox = sinon.createSandbox();
 
       vscodeManagerStub = sandbox.createStubInstance<models.IVSCodeManager>(
@@ -81,6 +86,7 @@ describe('ExtensionManager: event listeners tests', function () {
         iconsGeneratorStub,
         padMngStub,
         integrityManagerStub,
+        manifestReader,
       );
 
       logErrorStub = sandbox.stub(ErrorHandler, 'logError');

@@ -4,24 +4,26 @@ import { expect } from 'chai';
 import { Stats } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as proxyq from 'proxyquire';
+// import * as proxyq from 'proxyquire';
 import * as sinon from 'sinon';
-import * as fsAsync from '../../src/common/fsAsync';
-import { FileFormat } from '../../src/models';
+import { FileFormat, IFSAsync } from '../../src/models';
 import { Utils } from '../../src/utils';
 
 describe('Utils: tests', function () {
-  interface IUtils {
-    open: (arg: string) => Promise<void>;
-  }
+  // interface IUtils {
+  //   open: (arg: string) => Promise<void>;
+  // }
 
   context('ensures that', function () {
     let sandbox: sinon.SinonSandbox;
     let existsAsyncStub: sinon.SinonStub;
+    let fs: IFSAsync;
+    let utils: Utils;
 
     beforeEach(function () {
+      utils = new Utils(fs);
       sandbox = sinon.createSandbox();
-      existsAsyncStub = sandbox.stub(fsAsync, 'existsAsync').resolves();
+      existsAsyncStub = sandbox.stub(fs, 'existsAsync').resolves();
     });
 
     afterEach(function () {
@@ -102,7 +104,7 @@ describe('Utils: tests', function () {
 
           beforeEach(function () {
             pathSepStub = sandbox.stub(path, 'sep');
-            mkdirAsyncStub = sandbox.stub(fsAsync, 'mkdirAsync').resolves();
+            mkdirAsyncStub = sandbox.stub(fs, 'mkdirAsync').resolves();
           });
 
           const testCase = async (
@@ -119,7 +121,7 @@ describe('Utils: tests', function () {
             fileCheck.resetHistory();
             createDirectory.resetHistory();
 
-            await Utils.createDirectoryRecursively(directoryPath);
+            await utils.createDirectoryRecursively(directoryPath);
 
             expect(fileCheck.callCount).to.be.equal(
               dirExists ? expectedCounts + 2 : expectedCounts,
@@ -162,9 +164,9 @@ describe('Utils: tests', function () {
       let readdirAsyncStub: sinon.SinonStub;
 
       it('deletes a directory and all subdirectories asynchronously', async function () {
-        readdirAsyncStub = sandbox.stub(fsAsync, 'readdirAsync').resolves();
+        readdirAsyncStub = sandbox.stub(fs, 'readdirAsync').resolves();
         const directoryPath = '/path/to';
-        const lstatsAsyncStub = sandbox.stub(fsAsync, 'lstatAsync').resolves();
+        const lstatsAsyncStub = sandbox.stub(fs, 'lstatAsync').resolves();
         const fileCheck = existsAsyncStub
           .onFirstCall()
           .resolves(true)
@@ -180,10 +182,10 @@ describe('Utils: tests', function () {
           .resolves({
             isDirectory: () => false,
           } as Stats);
-        const deleteFile = sandbox.stub(fsAsync, 'unlinkAsync').resolves();
-        const removeDirectory = sandbox.stub(fsAsync, 'rmdirAsync').resolves();
+        const deleteFile = sandbox.stub(fs, 'unlinkAsync').resolves();
+        const removeDirectory = sandbox.stub(fs, 'rmdirAsync').resolves();
 
-        await Utils.deleteDirectoryRecursively(directoryPath);
+        await utils.deleteDirectoryRecursively(directoryPath);
 
         expect(fileCheck.calledTwice).to.be.true;
         expect(readDirectory.calledOnce).to.be.true;
@@ -216,7 +218,7 @@ describe('Utils: tests', function () {
             const toDirName = 'path/to';
 
             expect(() =>
-              Utils.getRelativePath('path/from', toDirName, false),
+              utils.getRelativePath('path/from', toDirName, false),
             ).to.not.throw(Error, `Directory '${toDirName}' not found.`);
           });
         });
@@ -227,7 +229,7 @@ describe('Utils: tests', function () {
           const trailingPathSeparatorTest = async (
             toDirName: string,
           ): Promise<void> => {
-            const relativePath = await Utils.getRelativePath(
+            const relativePath = await utils.getRelativePath(
               'path/from',
               toDirName,
               false,
@@ -255,7 +257,7 @@ describe('Utils: tests', function () {
       context('throws an Error', function () {
         it('if the `fromDirPath` parameter is NOT defined', async function () {
           try {
-            await Utils.getRelativePath(null, 'path/to');
+            await utils.getRelativePath(null, 'path/to');
           } catch (error) {
             expect(error).to.match(/fromDirPath not defined\./);
           }
@@ -263,7 +265,7 @@ describe('Utils: tests', function () {
 
         it('if the `toDirName` parameter is NOT defined', async function () {
           try {
-            await Utils.getRelativePath('path/from', null);
+            await utils.getRelativePath('path/from', null);
           } catch (error) {
             expect(error).to.match(/toDirName not defined\./);
           }
@@ -273,7 +275,7 @@ describe('Utils: tests', function () {
           const toDirName = 'path/to';
 
           try {
-            await Utils.getRelativePath('path/from', toDirName);
+            await utils.getRelativePath('path/from', toDirName);
           } catch (error) {
             expect(error).to.match(
               new RegExp(`Directory '${toDirName}' not found.`),
@@ -366,15 +368,15 @@ describe('Utils: tests', function () {
       let replacerStub: sinon.SinonStub;
 
       beforeEach(function () {
-        readFileAsyncStub = sandbox.stub(fsAsync, 'readFileAsync');
-        writeFileAsyncStub = sandbox.stub(fsAsync, 'writeFileAsync').resolves();
+        readFileAsyncStub = sandbox.stub(fs, 'readFileAsync');
+        writeFileAsyncStub = sandbox.stub(fs, 'writeFileAsync').resolves();
         replacerStub = sandbox.stub();
       });
 
       it('rejects on file read error', async function () {
         readFileAsyncStub.rejects(new Error('error on read'));
         try {
-          await Utils.updateFile('', replacerStub);
+          await utils.updateFile('', replacerStub);
         } catch (err) {
           expect(replacerStub.called).to.be.false;
           expect(err)
@@ -389,7 +391,7 @@ describe('Utils: tests', function () {
         replacerStub.returns([]);
 
         try {
-          await Utils.updateFile('', replacerStub);
+          await utils.updateFile('', replacerStub);
         } catch (error) {
           expect(replacerStub.calledOnce).to.be.true;
           expect(error)
@@ -402,7 +404,7 @@ describe('Utils: tests', function () {
         readFileAsyncStub.resolves('\n');
         replacerStub.returns([]);
 
-        const result = await Utils.updateFile('', replacerStub);
+        const result = await utils.updateFile('', replacerStub);
 
         expect(replacerStub.calledOnce).to.be.true;
         expect(result).to.be.undefined;
@@ -412,7 +414,7 @@ describe('Utils: tests', function () {
         readFileAsyncStub.resolves('\r\n');
         replacerStub.returns([]);
 
-        const result = await Utils.updateFile('', replacerStub);
+        const result = await utils.updateFile('', replacerStub);
 
         expect(replacerStub.calledOnce).to.be.true;
         expect(result).to.be.undefined;
@@ -423,7 +425,7 @@ describe('Utils: tests', function () {
         // Note: it's up to the replacer to provide the correct replaced context
         replacerStub.returns(['replaced\n']);
 
-        const result = await Utils.updateFile('', replacerStub);
+        const result = await utils.updateFile('', replacerStub);
 
         expect(replacerStub.calledOnce).to.be.true;
         expect(result).to.be.undefined;
@@ -447,18 +449,19 @@ describe('Utils: tests', function () {
       });
     });
 
-    context(`the 'open' function`, function () {
-      it(`to call the external module`, async function () {
-        const openStub = sandbox.stub().resolves();
-        const target = 'target';
-        const utils = (proxyq.noCallThru().load('../../src/utils', {
-          open: openStub,
-        }) as Record<string, IUtils>).Utils;
+    // TODO: (ROB) uncomment once browser support for open is there.
+    // context(`the 'open' function`, function () {
+    //   it(`to call the external module`, async function () {
+    //     const openStub = sandbox.stub().resolves();
+    //     const target = 'target';
+    //     const utils = (proxyq.noCallThru().load('../../src/utils', {
+    //       open: openStub,
+    //     }) as Record<string, IUtils>).Utils;
 
-        await utils.open(target);
+    //     await utils.open(target);
 
-        expect(openStub.calledOnceWithExactly(target, undefined)).to.be.true;
-      });
-    });
+    //     expect(openStub.calledOnceWithExactly(target, undefined)).to.be.true;
+    //   });
+    // });
   });
 });

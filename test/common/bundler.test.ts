@@ -4,17 +4,20 @@ import { expect } from 'chai';
 import { join } from 'path';
 import * as sinon from 'sinon';
 import { Bundler } from '../../src/common/bundler';
-import * as fsAsync from '../../src/common/fsAsync';
 import { constants } from '../../src/constants';
+import { FSNode } from '../../src/fs/fsNode';
+import { IFSAsync } from '../../src/models';
 
 describe('Bundler: tests', function () {
   context('ensures that', function () {
     let sandbox: sinon.SinonSandbox;
     let writeFileAsyncStub: sinon.SinonStub;
     let jsonStringifiedSpy: sinon.SinonSpy;
+    let fsAsync: IFSAsync;
 
     beforeEach(function () {
       sandbox = sinon.createSandbox();
+      fsAsync = new FSNode();
 
       writeFileAsyncStub = sandbox.stub(fsAsync, 'writeFileAsync').resolves();
       jsonStringifiedSpy = sandbox.spy(JSON, 'stringify');
