@@ -52,6 +52,7 @@ describe('ProjectAutoDetectionManager: NestJS project tests', function () {
       padManager = new ProjectAutoDetectionManager(
         vscodeManagerStub,
         configManagerStub,
+        fsAsync,
       );
 
       parseJSONStub = sandbox.stub(Utils, 'parseJSONSafe');

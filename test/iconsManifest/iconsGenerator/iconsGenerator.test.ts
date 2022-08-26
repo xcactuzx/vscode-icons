@@ -89,7 +89,11 @@ describe('IconsGenerator: tests', function () {
 
       buildManifestStaticStub = sandbox.stub(ManifestBuilder, 'buildManifest');
 
-      iconsGenerator = new IconsGenerator(vscodeManagerStub, configManagerStub);
+      iconsGenerator = new IconsGenerator(
+        fsAsync,
+        vscodeManagerStub,
+        configManagerStub,
+      );
 
       filesCollection = {
         default: { file: { icon: 'file', format: 'svg' } },
@@ -122,7 +126,7 @@ describe('IconsGenerator: tests', function () {
 
         it(`is NOT registered, when an instance of 'vscodeManager' is NOT passed`, function () {
           onDidChangeConfigurationStub.reset();
-          new IconsGenerator();
+          new IconsGenerator(fsAsync);
 
           expect(onDidChangeConfigurationStub.called).to.be.false;
         });
@@ -151,7 +155,7 @@ describe('IconsGenerator: tests', function () {
 
         it(`throws an Error, when 'configManager' is NOT instantiated`, async function () {
           try {
-            await new IconsGenerator().generateIconsManifest(
+            await new IconsGenerator(fsAsync).generateIconsManifest(
               fixtFiles,
               fixtFolders,
             );
